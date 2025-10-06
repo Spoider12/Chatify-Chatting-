@@ -1,6 +1,7 @@
 {
   "name": "backend",
   "version": "1.0.0",
+  "type": "module",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -8,7 +9,7 @@
     "start": "node  src/server.js"
   },
   "keywords": [],
-  "type": "module",
+  
   "author": "",
   "license": "ISC",
   "dependencies": {
