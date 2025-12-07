@@ -6,17 +6,15 @@ import {
   sendMessage,
 } from "../controllers/message.controller.js";
 import { protectRoute } from "../middlewares/auth.middleware.js";
-import { arcjetProtection } from "../middlewares/arcjetmiddleware.js";
 
 const router = express.Router();
 
-// the middlewares execute in order - so requests get rate-limited first, then authenticated.
-// this is actually more efficient since unauthenticated requests get blocked by rate limiting before hitting the auth middleware.
-router.use(arcjetProtection, protectRoute);
-
+// Make /contacts public (no auth required)
 router.get("/contacts", getAllContacts);
-router.get("/chats", getChatPartners);
-router.get("/:id", getMessagesByUserId);
-router.post("/send/:id", sendMessage);
+
+// Protect the chat-related routes
+router.get("/chats", protectRoute, getChatPartners);
+router.get("/:id", protectRoute, getMessagesByUserId);
+router.post("/send/:id", protectRoute, sendMessage);
 
 export default router;

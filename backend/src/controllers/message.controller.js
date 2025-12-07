@@ -5,10 +5,13 @@ import User from "../models/User.js";
 
 export const getAllContacts = async (req, res) => {
   try {
-    const loggedInUserId = req.user._id;
-    const filteredUsers = await User.find({ _id: { $ne: loggedInUserId } }).select("-password");
+    // If request is authenticated, exclude the logged-in user from the results.
+    // If unauthenticated, return all users.
+    const filter = req.user ? { _id: { $ne: req.user._id } } : {};
+    const users = await User.find(filter).select("-password").sort({ createdAt: -1 });
 
-    res.status(200).json(filteredUsers);
+    // users include createdAt and updatedAt fields (timestamps enabled on schema)
+    res.status(200).json(users);
   } catch (error) {
     console.log("Error in getAllContacts:", error);
     res.status(500).json({ message: "Server error" });

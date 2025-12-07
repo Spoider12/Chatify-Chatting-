@@ -5,19 +5,21 @@ import messageRoutes from "./routes/message.route.js";
 import path from "path";
 import { connectDB } from "./lib/db.js";
 dotenv.config();
-import cookieParser from "cookie-Parser";
+import {ENV} from "./lib/env.js"
+import cookieParser from "cookie-parser";
+import cors from "cors"
 
 
 const app = express();
 const __dirname = path.resolve();
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4000;
 
-app.use(express.json())
-
+app.use(express.json());
+app.use(cookieParser());
+app.use(cors({origin:ENV.CLIENT_URL,credentials:true}))
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
-app.use(cookieParser());
 
 // make ready for deployment
 if(process.env.NODE_ENV === "production"){
