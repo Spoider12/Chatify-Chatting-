@@ -8,12 +8,18 @@ dotenv.config();
 import {ENV} from "./lib/env.js"
 import cookieParser from "cookie-parser";
 import cors from "cors"
+import bodyParser from "body-parser";
 
 
 const app = express();
 const __dirname = path.resolve();
 
 const PORT = process.env.PORT || 4000;
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ limit: "10mb", extended: true }));
+
+app.use(bodyParser.json({ limit: "10mb" }));
+app.use(bodyParser.urlencoded({ limit: "10mb", extended: true }));
 
 app.use(express.json());
 app.use(cookieParser());
