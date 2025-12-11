@@ -1,5 +1,8 @@
  import axios from "axios";
+
+ // Use relative API path so Vite dev server proxy handles requests in development.
+ // This ensures requests originate from the same origin (dev server) and cookies are set/sent correctly.
  export const axiosInstance = axios.create({
-    baseURL:import.meta.env.MODE === "development"? "http://localhost:4000/api":"/api",
-    withCredentials: true,
- });
+   baseURL: "/api",
+   withCredentials: true,
+});
