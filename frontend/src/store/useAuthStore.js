@@ -4,6 +4,8 @@
 
   export const useAuthStore = create((set)=>({
    authUser:null,
+    onlineUsers: [],  // <-- FIX: always an array
+  setOnlineUsers: (users) => set({ onlineUsers: users }),
    isCheckingAuth:true,
    isSignUp:false,
    isLoggingIn:false,

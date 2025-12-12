@@ -1,4 +1,6 @@
 
+
+import { useEffect } from 'react'
 import ActiveTabSwitch from '../components/ActiveTabSwitch'
 import BorderAnimatedContainer from '../components/BorderAnimatedContainer'
 import ChatsList from '../components/ChatsList'
@@ -9,7 +11,14 @@ import ChatContainer from '../components/ChatContainer'
 import NoConversationPlaceholder from '../components/NoConversationPlaceholder'
 
 function ChatPage() {
-  const {activeTab,selectedUser} = useChatStore()
+  const {activeTab, selectedUser, getMyChatPartners, getAllContacts} = useChatStore()
+  
+  useEffect(() => {
+    // Load chats and contacts when page mounts
+    getMyChatPartners();
+    getAllContacts();
+  }, [getMyChatPartners, getAllContacts]);
+  
   return (
     <div className='relative w-full max-w-6xl h-[800px]'>
      <BorderAnimatedContainer>

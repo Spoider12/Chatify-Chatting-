@@ -1,6 +1,6 @@
 import {create} from "zustand";
 import { axiosInstance } from "../lib/axios";
-import toast from "react-hot-toast"
+import { toast } from "react-hot-toast"
 export const useChatStore = create((set,get)=>({
     allContacts:[],
     chats:[],
@@ -23,8 +23,9 @@ export const useChatStore = create((set,get)=>({
             set({allContacts:res.data});
 
         } catch (error) {
-            toast.error(error.response.data.message)
-            
+            const msg = error?.response?.data?.message || error?.message || "Failed to load contacts"
+            toast.error(msg)
+            console.log("Error fetching contacts:", error);
         }
         finally{
             set({isUsersLoading:false});
@@ -37,8 +38,9 @@ export const useChatStore = create((set,get)=>({
             set({chats:res.data});
 
         } catch (error) {
-            toast.error(error.response.data.message)
-            
+            const msg = error?.response?.data?.message || error?.message || "Failed to load chats"
+            toast.error(msg)
+            console.log("Error fetching chat partners:", error);
         }
         finally{
             set({isUsersLoading:false});
