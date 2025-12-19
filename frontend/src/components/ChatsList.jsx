@@ -12,10 +12,12 @@ function ChatsList() {
 
   useEffect(() => {
     getMyChatPartners();
+    console.log("Chats loaded:", chats);
   }, [getMyChatPartners]);
 
   if (isUsersLoading) return <UsersLoadingSkeleton />;
   if (chats.length === 0) return <NoChatsFound />;
+
    return (
     <>
       {chats.map((chat) => (
