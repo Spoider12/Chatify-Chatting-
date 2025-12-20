@@ -23,6 +23,8 @@ export const getMessagesByUserId = async (req, res) => {
     const myId = req.user._id;
     const { id: userToChatId } = req.params;
 
+    
+
     const messages = await Message.find({
       $or: [
         { senderId: myId, receiverId: userToChatId },
@@ -36,6 +38,7 @@ export const getMessagesByUserId = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
 
 export const sendMessage = async (req, res) => {
   try {
