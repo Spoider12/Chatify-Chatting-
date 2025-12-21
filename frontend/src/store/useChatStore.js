@@ -2,6 +2,7 @@ import {create} from "zustand";
 import { axiosInstance } from "../lib/axios";
 import { toast } from "react-hot-toast"
 import { useAuthStore } from "./useAuthStore";
+import { text } from "framer-motion/client";
 export const useChatStore = create((set,get)=>({
     allContacts:[],
     chats:[],
@@ -62,10 +63,24 @@ export const useChatStore = create((set,get)=>({
   },
   sendMessage: async (messageData) =>{
     const {selectedUser,messages} = get();
+    const {authUser} = useAuthStore.getState(); 
+    const tempId = `temp-${Date.now()}`
+    const optimisticMessage = {
+        _id: tempId,
+        senderId: authUser._id,
+        receiverId: selectedUser._id,
+        text: messageData.text,
+        image: messageData.image,
+        createdat: new Date().toLocaleString(),
+        isOptimistic:true,
+    };
+       set ({messages: [...messages,optimisticMessage]});
      try {
         const res  = await axiosInstance.post (`/messages/send/${selectedUser._id}`,messageData)
         set({messages:messages.concat (res.data)});
      } catch (error) {
+      // Remove the optimistic message on failure
+      set ({messages: messages})
         toast.error(error.response?.data?.message || "Something went wrong");
      }
   }
