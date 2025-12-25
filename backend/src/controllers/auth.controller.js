@@ -101,7 +101,7 @@ export const logout = (_, res) => {
   res.status(200).json({ message: "Logged out successfully" });
 };
 export const updateProfile = async (req, res) => {
-  try {
+  /*try {
     let imageUrl = req.body.profilePic;
 
     if (imageUrl) {
@@ -117,6 +117,31 @@ export const updateProfile = async (req, res) => {
     res.status(200).json(req.user);
   } catch (error) {
     console.log("Error in update profile:", error);
+    res.status(500).json({ message: "Error updating profile" });
+  }*/
+  try {
+    const { profilePic } = req.body;
+
+    if (!profilePic) {
+      return res.status(400).json({ message: "Profile picture is required" });
+    }
+
+    // Upload Base64 image to Cloudinary
+    const uploadedResponse = await cloudinary.uploader.upload(profilePic, {
+      folder: "profile_pictures",
+      transformation: [{ width: 300, height: 300, crop: "fill" }],
+    });
+
+    // Update user
+    req.user.profilePic = uploadedResponse.secure_url;
+    await req.user.save();
+
+    // Remove sensitive fields
+    const { password, ...safeUser } = req.user._doc;
+
+    res.status(200).json(safeUser);
+  } catch (error) {
+    console.error("Error in update profile:", error);
     res.status(500).json({ message: "Error updating profile" });
   }
 };
