@@ -6,7 +6,13 @@ import { protectRoute } from "../middlewares/auth.middleware.js";
 const router = express.Router();
 
 // Multer setup
-const upload = multer({ dest: "uploads/" });
+//const upload = multer({ dest: "uploads/" });
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
+
 
 router.post("/signup", signup);
 router.post("/login", login);
