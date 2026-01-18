@@ -7,8 +7,8 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "build": "node ./render-build.js",
-    "start": "cd backend && npm start"
+    "dev": "npm run dev --prefix backend",
+    "start": "npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend && npm run start --prefix backend"
   },
   "repository": {
     "type": "git",
