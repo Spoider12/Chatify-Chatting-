@@ -11,7 +11,7 @@ import { ENV } from "./lib/env.js";
 import { app, server } from "./lib/socket.js";
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(path.dirname(__filename));
+const __dirname = path.dirname(path.dirname(path.dirname(__filename)));
 
 const PORT = ENV.PORT || 3000;
 
@@ -52,14 +52,18 @@ app.use("/api/messages", messageRoutes);
 // Make ready for deployment - serve static files and SPA fallback
 if (ENV.NODE_ENV === "production") {
   const frontendDistPath = path.join(__dirname, "frontend", "dist");
+  console.log("Production mode - serving frontend from:", frontendDistPath);
   
   // Serve static assets
   app.use(express.static(frontendDistPath));
 
   // SPA fallback - serve index.html for all non-API routes
   app.get("*", (_, res) => {
-    res.sendFile(path.join(frontendDistPath, "index.html"), (err) => {
+    const indexPath = path.join(frontendDistPath, "index.html");
+    console.log("Attempting to serve:", indexPath);
+    res.sendFile(indexPath, (err) => {
       if (err) {
+        console.error("Error serving index.html:", err);
         res.status(500).send("Error loading application");
       }
     });
