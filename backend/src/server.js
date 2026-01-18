@@ -11,10 +11,7 @@ import { ENV } from "./lib/env.js";
 import { app, server } from "./lib/socket.js";
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(path.dirname(path.dirname(__filename)));
-
-// Ensure we can resolve modules from backend directory
-process.chdir(path.join(__dirname, 'backend'));
+const __dirname = path.dirname(path.dirname(__filename));
 
 const PORT = ENV.PORT || 3000;
 
