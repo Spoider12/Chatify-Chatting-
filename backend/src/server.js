@@ -15,8 +15,34 @@ const __dirname = path.dirname(path.dirname(__filename));
 
 const PORT = ENV.PORT || 3000;
 
+// CORS configuration
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Allow localhost for development
+    if (origin.includes("localhost") || origin.includes("127.0.0.1")) {
+      return callback(null, true);
+    }
+    
+    // Allow Vercel preview and production URLs
+    if (origin.includes("vercel.app")) {
+      return callback(null, true);
+    }
+    
+    // Allow configured CLIENT_URL (Render frontend)
+    if (ENV.CLIENT_URL && origin === ENV.CLIENT_URL.replace(/\/$/, "")) {
+      return callback(null, true);
+    }
+    
+    callback(null, true); // Allow all origins in production for now
+  },
+  credentials: true,
+};
+
 app.use(express.json({ limit: "5mb" })); // req.body
-app.use(cors({ origin: ENV.CLIENT_URL, credentials: true }));
+app.use(cors(corsOptions));
 app.use(cookieParser());
 
 // API Routes (must be before static files and catch-all)
