@@ -7,7 +7,7 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "build": "cd backend && npm install && cd ../frontend && npm install && npm run build && cd ..",
+    "build": "bash render-build.sh",
     "start": "cd backend && npm start"
   },
   "repository": {

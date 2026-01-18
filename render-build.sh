@@ -1,11 +1,16 @@
 #!/bin/bash
 set -e
 
-echo "Installing dependencies..."
-npm install --prefix backend
-npm install --prefix frontend
+echo "==> Installing backend dependencies..."
+cd backend
+npm install
+cd ..
 
-echo "Building frontend..."
-npm run build --prefix frontend
+echo "==> Installing frontend dependencies..."
+cd frontend
+npm install
+echo "==> Building frontend..."
+npm run build
+cd ..
 
-echo "Build complete!"
+echo "==> Build complete!"
