@@ -45,7 +45,7 @@ function ChatContainer() {
       <div className="flex-1 overflow-y-auto px-6 py-6">
         {isMessagesLoading ? (
           <MessageLoadingSkeleton />
-        ) : Array.isArray(messages) && messages.length > 0 ? (
+        ) : messages.length > 0 ? (
           <div className="max-w-3xl mx-auto space-y-6">
             {messages.map((msg) => (
               <div
