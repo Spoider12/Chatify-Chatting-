@@ -9,7 +9,24 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: (origin, callback) => {
+      // Allow localhost for development
+      if (!origin || origin.includes("localhost") || origin.includes("127.0.0.1")) {
+        return callback(null, true);
+      }
+      
+      // Allow Vercel preview and production URLs
+      if (origin.includes("vercel.app")) {
+        return callback(null, true);
+      }
+      
+      // Allow configured CLIENT_URL
+      if (ENV.CLIENT_URL && origin === ENV.CLIENT_URL.replace(/\/$/, "")) {
+        return callback(null, true);
+      }
+      
+      callback(null, true);
+    },
     methods: ["GET", "POST"],
     credentials: true,
   },

@@ -9,8 +9,8 @@ export const generateToken = (userId, res) => {
   res.cookie("jwt", token, {
     maxAge: 7 * 24 * 60 * 60 * 1000, // ms
     httpOnly: true, // prevent xss attacks
-    // In development we allow a more permissive SameSite so the cookie works with dev setups
-    sameSite: process.env.NODE_ENV === "development" ? "lax" : "strict",
+    // Use "lax" for cross-origin requests (Vercel <-> Render)
+    sameSite: "lax",
     // Only mark secure in production (requires HTTPS). Keep false in development.
     secure: process.env.NODE_ENV === "production",
   });
