@@ -17,6 +17,7 @@ app.use(express.json({ limit: "5mb" })); // req.body
 app.use(cors({ origin: "https://chatify-chatting.vercel.app", credentials: true }));
 app.use(cookieParser());
 
+// API routes - must come before static file serving
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
 
@@ -24,6 +25,7 @@ app.use("/api/messages", messageRoutes);
 if (ENV.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../frontend/dist")));
 
+  // SPA fallback - catch all remaining routes
   app.get("*", (_, res) => {
     res.sendFile(path.join(__dirname, "../frontend", "dist", "index.html"));
   });
