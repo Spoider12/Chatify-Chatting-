@@ -10,25 +10,25 @@ import { ENV } from "./lib/env.js";
 import { app, server } from "./lib/socket.js";
 
 const __dirname = path.resolve();
-
 const PORT = ENV.PORT || 3000;
 
-app.use(express.json({ limit: "5mb" })); // req.body
-app.use(cors({ origin: ["https://chatify-chatting.vercel.app",
-  "https://vercel.com/anurag-gautams-projects-6c97e146/chatify-chatting/2NQceJRkG7nKHxApdVfFGjKtVADr"
-],
-   credentials: true }));
+// ✅ CORS must be first
+app.use(cors({
+  origin: [
+    "https://chatify-chatting-pbvm.vercel.app", // ✅ correct URL
+    "http://localhost:5173", // for local dev
+  ],
+  credentials: true,
+}));
+
+app.use(express.json({ limit: "5mb" }));
 app.use(cookieParser());
 
-// API routes - must come before static file serving
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
 
-// make ready for deployment
 if (ENV.NODE_ENV === "production") {
   app.use(express.static(path.join(__dirname, "../frontend/dist")));
-
-  // SPA fallback - catch all remaining routes
   app.get("*", (_, res) => {
     res.sendFile(path.join(__dirname, "../frontend", "dist", "index.html"));
   });
