@@ -14,7 +14,10 @@ const __dirname = path.resolve();
 const PORT = ENV.PORT || 3000;
 
 app.use(express.json({ limit: "5mb" })); // req.body
-app.use(cors({ origin: "https://chatify-chatting.vercel.app", credentials: true }));
+app.use(cors({ origin: ["https://chatify-chatting.vercel.app",
+  "https://vercel.com/anurag-gautams-projects-6c97e146/chatify-chatting/2NQceJRkG7nKHxApdVfFGjKtVADr"
+],
+   credentials: true }));
 app.use(cookieParser());
 
 // API routes - must come before static file serving
