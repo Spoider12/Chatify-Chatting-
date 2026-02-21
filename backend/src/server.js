@@ -13,13 +13,12 @@ const __dirname = path.resolve();
 const PORT = ENV.PORT || 3000;
 
 // ✅ CORS must be first
-app.use(cors({
-  origin: [
-    "https://chatify-chatting-pbvm.vercel.app", // ✅ correct URL
-    "http://localhost:5173", // for local dev
-  ],
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: true,   // allows request origin dynamically
+    credentials: true,
+  })
+);
 
 app.use(express.json({ limit: "5mb" }));
 app.use(cookieParser());
