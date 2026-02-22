@@ -15,7 +15,7 @@ const PORT = ENV.PORT || 3000;
 // ✅ CORS must be first
 app.use(
   cors({
-    origin: "http://localhost:5173",   // allows request origin dynamically
+    origin: true,   // allows request origin dynamically
     credentials: true,
   })
 ); 
