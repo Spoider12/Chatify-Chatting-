@@ -10,7 +10,7 @@ import { protectRoute } from "../middlewares/auth.middleware.js";
 const router = express.Router();
 
 // Make /contacts public (no auth required)
-router.get("/contacts", getAllContacts);
+router.get("/contacts", protectRoute, getAllContacts);
 
 // Protect the chat-related routes
 router.get("/chats", protectRoute, getChatPartners);

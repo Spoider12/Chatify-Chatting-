@@ -8,9 +8,11 @@ export const generateToken = (userId, res) => {
   res.cookie("jwt", token, {
     maxAge: 7 * 24 * 60 * 60 * 1000,
     httpOnly: true,
-    sameSite: "none",        // REQUIRED for cross-site
-    secure: true,            // MUST be true for Vercel <-> Render
+    // make the cookie available to cross‑site requests (frontend proxy/production)
+    sameSite: "none",
+    // only send over HTTPS in production
+    secure: process.env.NODE_ENV === "production",
   });
 
   return token;
-};// in useChatStore.js
+};
