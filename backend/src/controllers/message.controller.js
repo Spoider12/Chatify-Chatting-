@@ -1,18 +1,23 @@
 import cloudinary from "../lib/cloudinary.js";
-
-
 import Message from "../models/message.js";
 import User from "../models/User.js";
-import {io,getReceiverSocketId} from "../lib/socket.js"
+import { io, getReceiverSocketId } from "../lib/socket.js";
 
+/* =========================
+   GET ALL CONTACTS
+========================= */
 export const getAllContacts = async (req, res) => {
   try {
-    // If request is authenticated, exclude the logged-in user from the results.
-    // If unauthenticated, return all users.
-    const filter = req.user ? { _id: { $ne: req.user._id } } : {};
-    const users = await User.find(filter).select("-password").sort({ createdAt: -1 });
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
 
-    // users include createdAt and updatedAt fields (timestamps enabled on schema)
+    const users = await User.find({
+      _id: { $ne: req.user._id },
+    })
+      .select("-password")
+      .sort({ createdAt: -1 });
+
     res.status(200).json(users);
   } catch (error) {
     console.log("Error in getAllContacts:", error);
@@ -20,30 +25,41 @@ export const getAllContacts = async (req, res) => {
   }
 };
 
+/* =========================
+   GET MESSAGES BY USER ID
+========================= */
 export const getMessagesByUserId = async (req, res) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     const myId = req.user._id;
     const { id: userToChatId } = req.params;
-
-    
 
     const messages = await Message.find({
       $or: [
         { senderId: myId, receiverId: userToChatId },
         { senderId: userToChatId, receiverId: myId },
       ],
-    });
+    }).sort({ createdAt: 1 }); // sorted properly
 
-    res.status(200).json(messages);
+    res.status(200).json(messages || []);
   } catch (error) {
-    console.log("Error in getMessages controller: ", error.message);
+    console.log("Error in getMessages controller:", error.message);
     res.status(500).json({ error: "Internal server error" });
   }
 };
 
-
+/* =========================
+   SEND MESSAGE
+========================= */
 export const sendMessage = async (req, res) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     const { text, image } = req.body;
     const { id: receiverId } = req.params;
     const senderId = req.user._id;
@@ -52,7 +68,7 @@ export const sendMessage = async (req, res) => {
       return res.status(400).json({ message: "Text or image is required." });
     }
 
-    if (senderId.equals(receiverId)) {
+    if (senderId.toString() === receiverId) {
       return res
         .status(400)
         .json({ message: "Cannot send messages to yourself." });
@@ -76,7 +92,6 @@ export const sendMessage = async (req, res) => {
       image: imageUrl,
     });
 
-    // ✅ SOCKET LOGIC (CORRECT)
     const receiverSocketId = getReceiverSocketId(receiverId);
 
     if (receiverSocketId) {
@@ -90,19 +105,27 @@ export const sendMessage = async (req, res) => {
   }
 };
 
-
+/* =========================
+   GET CHAT PARTNERS
+========================= */
 export const getChatPartners = async (req, res) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
     const loggedInUserId = req.user._id;
 
-    // find all the messages where the logged-in user is either sender or receiver
     const messages = await Message.find({
-      $or: [{ senderId: loggedInUserId }, { receiverId: loggedInUserId }],
+      $or: [
+        { senderId: loggedInUserId },
+        { receiverId: loggedInUserId },
+      ],
     });
 
     const chatPartnerIds = [
       ...new Set(
-        messages.map((msg) =>
+        (messages || []).map((msg) =>
           msg.senderId.toString() === loggedInUserId.toString()
             ? msg.receiverId.toString()
             : msg.senderId.toString()
@@ -110,11 +133,13 @@ export const getChatPartners = async (req, res) => {
       ),
     ];
 
-    const chatPartners = await User.find({ _id: { $in: chatPartnerIds } }).select("-password");
+    const chatPartners = await User.find({
+      _id: { $in: chatPartnerIds },
+    }).select("-password");
 
-    res.status(200).json(chatPartners);
+    res.status(200).json(chatPartners || []);
   } catch (error) {
-    console.error("Error in getChatPartners: ", error.message);
+    console.error("Error in getChatPartners:", error.message);
     res.status(500).json({ error: "Internal server error" });
   }
 };

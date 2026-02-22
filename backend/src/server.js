@@ -18,7 +18,7 @@ app.use(
     origin: true,   // allows request origin dynamically
     credentials: true,
   })
-);
+); 
 
 app.use(express.json({ limit: "5mb" }));
 app.use(cookieParser());
