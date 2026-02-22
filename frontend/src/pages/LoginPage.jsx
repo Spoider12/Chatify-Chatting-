@@ -11,10 +11,13 @@ function LoginPage() {
 
    const navigate = useNavigate();
 
-   const handleSubmit = (e) =>{
+   const handleSubmit = async (e) =>{
     e.preventDefault();
-    login(formData);
-    navigate("/");
+    // wait for auth request to finish before redirecting
+    const success = await login(formData);
+    if (success) {
+      navigate("/");
+    }
   }
   return (
     <div>
@@ -105,7 +108,7 @@ function LoginPage() {
         </BorderAnimatedContainer>
       </div>
     </div>
-  )
+  
     </div>
   )
 }

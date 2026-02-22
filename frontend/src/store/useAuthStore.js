@@ -51,9 +51,11 @@
       set({authUser:res.data});
       toast.success("logged in successfully")
       get().connectSocket();  //connect to socket after login
+      return true; // indicate success
     } catch (error) {
       const msg = error?.response?.data?.message || error?.message || "Login failed"
       toast.error(msg)
+      return false;
     }
     finally{
       set({isLoggingIn:false})

@@ -33,12 +33,14 @@ export const useChatStore = create((set, get) => ({
     }
   },
   getMyChatPartners: async () => {
+    const { authUser } = useAuthStore.getState();
+    if (!authUser) return; // don't call API when not logged in
     set({ isUsersLoading: true });
     try {
       const res = await axiosInstance.get("/messages/chats");
       set({ chats: res.data });
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Unauthorized");
     } finally {
       set({ isUsersLoading: false });
     }
