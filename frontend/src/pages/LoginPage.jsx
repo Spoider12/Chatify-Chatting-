@@ -10,6 +10,8 @@ function LoginPage() {
    const {login , isLoggingIn}=useAuthStore();
 
    const navigate = useNavigate();
+   console.log(import.meta.env.VITE_API_URL);
+   
 
    const handleSubmit = async (e) =>{
     e.preventDefault();
