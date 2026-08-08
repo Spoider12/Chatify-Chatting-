@@ -12,6 +12,15 @@ const messageSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    groupId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Group",
+    },
+    messageType:{
+      type: String,
+      enum: ["private", "group"],
+      required: true,
+    },
     text: {
       type: String,
       trim: true,
