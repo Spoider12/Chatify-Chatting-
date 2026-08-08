@@ -14,6 +14,7 @@
    isLoggingIn:false,
    socket : null,
    onlineUsers:[],
+   allUsers:[], //for showing all users in create group modal
    checkAuth: async()=>{
     try {
       const res = await axiosInstance.get("/auth/check")
