@@ -92,6 +92,7 @@ export const sendMessage = async (req, res) => {
       receiverId,
       text,
       image: imageUrl,
+      messageType: "private",
     });
 
     const receiverSocketId = getReceiverSocketId(receiverId);
