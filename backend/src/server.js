@@ -16,9 +16,10 @@ const PORT = ENV.PORT || 3000;
 // ✅ CORS must be first
   app.use(cors({
   origin: [
-    "http://localhost:5173",
+      ENV.CLIENT_URL,
+    "http://localhost:5174",
     "https://chatify-chatting.vercel.app"
-  ],
+    ].filter(Boolean),
   credentials: true,
 }));
 

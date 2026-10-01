@@ -37,19 +37,19 @@ const io = new Server(server, {
 // apply authentication middleware to all socket connections
 io.use(socketAuthMiddleware);
 
-// this is for storing online users mapping {userId: socketId}
-const userSocketMap = {}; // {userId:socketId}
-
-// we will use this function to check if the user is online or not
-export function getReceiverSocketId(userId) {
-  return userSocketMap[userId];
+function getOnlineUserIds() {
+  return [...new Set(
+    [...io.sockets.sockets.values()]
+      .filter((socket) => socket.connected)
+      .map((socket) => socket.userId)
+  )];
 }
 
 io.on("connection",async (socket) => {
   console.log("A user connected", socket.user.fullName);
 
   const userId = socket.userId;
-  userSocketMap[userId] = socket.id;
+  socket.join(userId.toString());
 
   //AUTO JOIN USER GROUPS
   try {
@@ -65,7 +65,7 @@ io.on("connection",async (socket) => {
   }
 
   // io.emit() is used to send events to all connected clients
-  io.emit("getOnlineUsers", Object.keys(userSocketMap));
+  io.emit("getOnlineUsers", getOnlineUserIds());
 
   //private message socket
    socket.on("sendPrivateMessage", async ({ receiverId, text }) => {
@@ -77,11 +77,7 @@ io.on("connection",async (socket) => {
         messageType: "private",
       });
 
-      const receiverSocketId = getReceiverSocketId(receiverId);
-
-      if (receiverSocketId) {
-        io.to(receiverSocketId).emit("receivePrivateMessage", newMessage);
-      }
+      io.to(receiverId.toString()).emit("receivePrivateMessage", newMessage);
 
       // Also send back to sender
       socket.emit("receivePrivateMessage", newMessage);
@@ -112,8 +108,7 @@ io.on("connection",async (socket) => {
   // with socket.on we listen for events from clients
   socket.on("disconnect", () => {
     console.log("A user disconnected", socket.user.fullName);
-    delete userSocketMap[userId];
-    io.emit("getOnlineUsers", Object.keys(userSocketMap));
+    io.emit("getOnlineUsers", getOnlineUserIds());
   });
 });
 

@@ -1,7 +1,7 @@
 import cloudinary from "../lib/cloudinary.js";
 import Message from "../models/message.js";
 import User from "../models/User.js";
-import { io, getReceiverSocketId } from "../lib/socket.js";
+import { io } from "../lib/socket.js";
 
 /* =========================
    GET ALL CONTACTS
@@ -37,6 +37,11 @@ export const getMessagesByUserId = async (req, res) => {
     const myId = req.user._id;
     const { id: userToChatId } = req.params;
 
+    await Message.updateMany(
+      { senderId: userToChatId, receiverId: myId, isRead: false },
+      { $set: { isRead: true } }
+    );
+
     const messages = await Message.find({
       $or: [
         { senderId: myId, receiverId: userToChatId },
@@ -50,6 +55,28 @@ export const getMessagesByUserId = async (req, res) => {
     res.status(500).json({
       error:error.message,
      });
+  }
+};
+
+export const markMessagesRead = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    await Message.updateMany(
+      {
+        senderId: req.params.id,
+        receiverId: req.user._id,
+        isRead: false,
+      },
+      { $set: { isRead: true } }
+    );
+
+    res.status(200).json({ message: "Messages marked as read" });
+  } catch (error) {
+    console.error("Error marking messages as read:", error.message);
+    res.status(500).json({ message: "Failed to mark messages as read" });
   }
 };
 
@@ -93,13 +120,10 @@ export const sendMessage = async (req, res) => {
       text,
       image: imageUrl,
       messageType: "private",
+      isRead: false,
     });
 
-    const receiverSocketId = getReceiverSocketId(receiverId);
-
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit("newMessage", newMessage);
-    }
+    io.to(receiverId.toString()).emit("newMessage", newMessage);
 
     res.status(201).json(newMessage);
   } catch (error) {
@@ -124,23 +148,49 @@ export const getChatPartners = async (req, res) => {
         { senderId: loggedInUserId },
         { receiverId: loggedInUserId },
       ],
-    });
+    }).sort({ createdAt: -1 });
 
-    const chatPartnerIds = [
-      ...new Set(
-        (messages || []).map((msg) =>
-          msg.senderId.toString() === loggedInUserId.toString()
-            ? msg.receiverId.toString()
-            : msg.senderId.toString()
-        )
-      ),
-    ];
+    const latestMessageByPartner = new Map();
+    const unreadCountByPartner = new Map();
+    for (const message of messages) {
+      const isSender = message.senderId.toString() === loggedInUserId.toString();
+      const partnerId = isSender
+        ? message.receiverId.toString()
+        : message.senderId.toString();
+
+      if (!latestMessageByPartner.has(partnerId)) {
+        latestMessageByPartner.set(partnerId, message);
+      }
+      if (!isSender && message.isRead === false) {
+        unreadCountByPartner.set(
+          partnerId,
+          (unreadCountByPartner.get(partnerId) || 0) + 1
+        );
+      }
+    }
+
+    const chatPartnerIds = [...latestMessageByPartner.keys()];
 
     const chatPartners = await User.find({
       _id: { $in: chatPartnerIds },
     }).select("-password");
 
-    res.status(200).json(chatPartners || []);
+    const chats = chatPartners
+      .map((partner) => {
+        const partnerId = partner._id.toString();
+        return {
+          ...partner.toObject(),
+          lastMessage: latestMessageByPartner.get(partnerId),
+          unreadCount: unreadCountByPartner.get(partnerId) || 0,
+        };
+      })
+      .sort(
+        (first, second) =>
+          new Date(second.lastMessage.createdAt) -
+          new Date(first.lastMessage.createdAt)
+      );
+
+    res.status(200).json(chats);
   } catch (error) {
     console.error("Error in getChatPartners:", error.message);
     res.status(500).json({ error: "Internal server error" });

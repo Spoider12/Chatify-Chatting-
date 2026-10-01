@@ -21,6 +21,10 @@ const messageSchema = new mongoose.Schema(
       enum: ["private", "group"],
       required: true,
     },
+    isRead: {
+      type: Boolean,
+      default: true,
+    },
     text: {
       type: String,
       trim: true,
