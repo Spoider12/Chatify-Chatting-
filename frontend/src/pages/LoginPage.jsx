@@ -1,118 +1,105 @@
-import {useState} from "react";
+import React, { useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
-import {Link, useNavigate} from "react-router";
-import {MessageCircleIcon,MailIcon,LoaderIcon, LockIcon} from "lucide-react";
-import BorderAnimatedContainer from "../components/BorderAnimatedContainer";
-
+import { Link, useNavigate } from "react-router";
+import { MessageSquare, MailIcon, LoaderIcon, LockIcon } from "lucide-react";
 
 function LoginPage() {
-  const [formData,setFormData] = useState({email:"",password:""})
-   const {login , isLoggingIn}=useAuthStore();
+  const [formData, setFormData] = useState({ email: "", password: "" });
+  const { login, isLoggingIn } = useAuthStore();
+  const navigate = useNavigate();
 
-   const navigate = useNavigate();
-   console.log(import.meta.env.VITE_API_URL);
-   
-
-   const handleSubmit = async (e) =>{
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // wait for auth request to finish before redirecting
     const success = await login(formData);
     if (success) {
       navigate("/");
     }
-  }
+  };
+
   return (
-    <div>
-      
-    <div className='w-full flex items-center justify-center p-4 bg-slate-900'>
-      <div className='relative w-full max-w-6xl md:h-[800px] h-[650px]'>
-        <BorderAnimatedContainer>
-          <div className='w-full flex flex-col md:flex-row'>
-            {/* FORM COLOUMN LEFT HAND SIDE */}
-            <div className='md:w-1/2 p-8 flex items-center justify-center md:border-r border-slate-600/30'>
-            <div className='w-full max-w-md'>
-              <div className="text-center mb-8" >
-              <MessageCircleIcon className='w-12 h-12 mx-auto text-slate-400 mb-4'/>
-              <h2 className='text-2xl font-bold text-slate-200 mb-2'>Welcome Back</h2>
-              <p className='text-slate-400'> Login to access to your account</p>
-              </div>
-              {/*FORM*/}
-              <form onSubmit={handleSubmit} className='space-y-6'>
-                 
-                  {/* EMAIL  INPUT*/}
-                 <div>
-                    <label className="auth-input-label">Email</label>
-                    <div className="relative">
-                      <MailIcon className="auth-input-icon" />
+    <div className="min-h-screen w-full flex items-center justify-center p-4 bg-[#0b0f19] relative overflow-hidden">
+      {/* Background Decorator */}
+      <div className="absolute top-0 left-0 w-full h-48 bg-gradient-to-r from-cyan-600 to-indigo-600 z-0" />
 
-                      <input
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="input"
-                        placeholder="John Doe@gmail.com"
-                      />
-                    </div>
-                  </div>
-                  {/* PASSWORD  INPUT*/}
-                 <div>
-                    <label className="auth-input-label">Password</label>
-                    <div className="relative">
-                      <LockIcon className="auth-input-icon" />
-
-                      <input
-                        type="Password"
-                        value={formData.password}
-                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        className="input"
-                        placeholder="type your password"
-                      />
-                    </div>
-                  </div>
-                    {/* SUBMIT BUTTON */}
-                    <button className="auth-btn" type="submit" disabled={isLoggingIn}>
-                    {isLoggingIn ? (
-                      <LoaderIcon className="w-full h-5 animate-spin text-center" />
-                    ) : (
-                      "Sign In"
-                    )}
-                  </button>
-              </form>
-              <div className="mt-6 text-center">
-                  <Link to="/signup" className="auth-link">
-                   Don't have an account? Sign Up
-                  </Link>
-                </div>
-              
+      <div className="relative z-10 w-full max-w-4xl bg-[#111827] rounded-2xl shadow-2xl overflow-hidden border border-[#1f2937] flex flex-col md:flex-row">
+        {/* Left Form */}
+        <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="size-10 rounded-full bg-[#06b6d4] flex items-center justify-center text-slate-950 shadow-lg">
+              <MessageSquare className="size-6 fill-current" />
             </div>
-            </div>
-            {/* FORM ILLUSTRATION RIGHT SIDE */}
-            <div className="hidden md:w-1/2 md:flex items-center justify-center p-6 bg-gradient-to-bl from-slate-800/20 to-transparent">
-              <div>
-                <img
-                  src="/login.png"
-                  alt="People using mobile devices"
-                  className="w-full h-auto object-contain"
-                />
-                <div className="mt-6 text-center">
-                  <h3 className="text-xl font-medium text-cyan-400">Connect anytime,anywhere</h3>
-
-                  <div className="mt-4 flex justify-center gap-4">
-                    <span className="auth-badge">Free</span>
-                    <span className="auth-badge">Easy Setup</span>
-                    <span className="auth-badge">Private</span>
-                  </div>
-                </div>
-                
-              </div>
-            </div>
+            <h1 className="text-2xl font-extrabold text-slate-100 tracking-wide">Chatify Chatting</h1>
           </div>
-        </BorderAnimatedContainer>
+
+          <h2 className="text-xl font-semibold text-slate-200 mb-1">Welcome Back</h2>
+          <p className="text-sm text-slate-400 mb-8">Sign in to sync your messages & contacts</p>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="auth-input-label">Email address</label>
+              <div className="relative">
+                <MailIcon className="auth-input-icon text-slate-400" />
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full bg-[#0b0f19] border border-[#1f2937] rounded-lg py-2.5 pl-10 pr-4 text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-[#06b6d4] focus:outline-none"
+                  placeholder="name@example.com"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="auth-input-label">Password</label>
+              <div className="relative">
+                <LockIcon className="auth-input-icon text-slate-400" />
+                <input
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="w-full bg-[#0b0f19] border border-[#1f2937] rounded-lg py-2.5 pl-10 pr-4 text-slate-100 placeholder-slate-400 focus:ring-2 focus:ring-[#06b6d4] focus:outline-none"
+                  placeholder="Enter your password"
+                  required
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoggingIn}
+              className="w-full py-3 bg-[#06b6d4] hover:bg-[#0891b2] text-slate-950 font-bold rounded-lg shadow-lg transition-colors flex items-center justify-center"
+            >
+              {isLoggingIn ? <LoaderIcon className="size-5 animate-spin" /> : "Sign In to Chatify"}
+            </button>
+          </form>
+
+          <p className="mt-8 text-center text-sm text-slate-400">
+            Don't have an account?{" "}
+            <Link to="/signup" className="text-[#06b6d4] font-semibold hover:underline">
+              Create one now
+            </Link>
+          </p>
+        </div>
+
+        {/* Right Illustration */}
+        <div className="hidden md:w-1/2 bg-[#0b0f19] p-12 md:flex flex-col items-center justify-center text-center border-l border-[#1f2937]">
+          <div className="size-32 rounded-full bg-[#06b6d4]/10 flex items-center justify-center mb-6 border border-[#06b6d4]/30">
+            <MessageSquare className="size-16 text-[#06b6d4]" />
+          </div>
+          <h3 className="text-xl font-bold text-slate-100 mb-2">Chatify Chatting Platform</h3>
+          <p className="text-sm text-slate-400 leading-relaxed max-w-xs">
+            Send instant messages, record voice notes, share photos, react with emojis, and chat seamlessly.
+          </p>
+          <div className="mt-8 flex gap-2">
+            <span className="px-3 py-1 bg-[#06b6d4]/20 text-[#06b6d4] text-xs font-semibold rounded-full">Secure</span>
+            <span className="px-3 py-1 bg-[#06b6d4]/20 text-[#06b6d4] text-xs font-semibold rounded-full">Real-time</span>
+            <span className="px-3 py-1 bg-[#06b6d4]/20 text-[#06b6d4] text-xs font-semibold rounded-full">Voice Notes</span>
+          </div>
+        </div>
       </div>
     </div>
-  
-    </div>
-  )
+  );
 }
 
-export default LoginPage
+export default LoginPage;

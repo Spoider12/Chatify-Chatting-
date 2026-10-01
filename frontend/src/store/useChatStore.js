@@ -7,28 +7,50 @@ export const useChatStore = create((set, get) => ({
   allContacts: [],
   chats: [],
   messages: [],
-  activeTab: "chats",
+  activeTab: "chats", // "chats", "contacts", "groups"
+  chatFilter: "all", // "all", "unread", "groups"
+  searchQuery: "",
   selectedUser: null,
   selectedGroup: null,
+  replyToMessage: null,
+  activeDrawer: null, // null, "profile", "settings", "status", "createGroup"
+  typingUsers: {}, // { [userId]: boolean }
   isUsersLoading: false,
   isMessagesLoading: false,
 
-  // ✅ Group selector
+  theme: localStorage.getItem("waTheme") || "dark",
+  setTheme: (theme) => {
+    localStorage.setItem("waTheme", theme);
+    set({ theme });
+  },
+  toggleTheme: () => {
+    const nextTheme = get().theme === "dark" ? "light" : "dark";
+    localStorage.setItem("waTheme", nextTheme);
+    set({ theme: nextTheme });
+  },
+
+  setSearchQuery: (query) => set({ searchQuery: query }),
+  setChatFilter: (filter) => set({ chatFilter: filter }),
+  setReplyToMessage: (msg) => set({ replyToMessage: msg }),
+  setActiveDrawer: (drawer) => set({ activeDrawer: drawer }),
+
+  // Group selector
   setSelectedGroup: (group) =>
     set({
       selectedGroup: group,
-      selectedUser: null, // clear personal chat
+      selectedUser: null,
+      replyToMessage: null,
     }),
 
-  // ✅ User selector
+  // User selector
   setSelectedUser: (user) =>
     set({
       selectedUser: user,
-      selectedGroup: null, // clear group chat
+      selectedGroup: null,
+      replyToMessage: null,
     }),
 
-  isSoundEnabled:
-    JSON.parse(localStorage.getItem("isSoundEnabled")) === true,
+  isSoundEnabled: JSON.parse(localStorage.getItem("isSoundEnabled")) ?? true,
 
   toggleSound: () => {
     const current = get().isSoundEnabled;
@@ -97,26 +119,61 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
+  sendTypingSignal: (isTyping) => {
+    const socket = useAuthStore.getState().socket;
+    const { selectedUser, selectedGroup } = get();
+    if (!socket) return;
+
+    if (selectedUser) {
+      socket.emit(isTyping ? "typing" : "stopTyping", {
+        receiverId: selectedUser._id,
+      });
+    } else if (selectedGroup) {
+      socket.emit(isTyping ? "typing" : "stopTyping", {
+        groupId: selectedGroup._id,
+      });
+    }
+  },
+
   sendMessage: async (messageData) => {
-    const { selectedUser, messages } = get();
+    const { selectedUser, messages, replyToMessage } = get();
     const { authUser } = useAuthStore.getState();
 
     if (!selectedUser) return;
 
     const tempId = `temp-${Date.now()}`;
+    const payload = {
+      ...messageData,
+      replyTo: replyToMessage
+        ? {
+            _id: replyToMessage._id,
+            text: replyToMessage.text || (replyToMessage.audio ? "Voice message" : "Photo"),
+            senderName:
+              replyToMessage.senderId === authUser._id ? "You" : selectedUser.fullName,
+            image: replyToMessage.image,
+            audio: replyToMessage.audio,
+          }
+        : null,
+    };
 
     const optimisticMessage = {
       _id: tempId,
       senderId: authUser._id,
       receiverId: selectedUser._id,
-      text: messageData.text,
-      image: messageData.image,
+      text: payload.text || "",
+      image: payload.image,
+      audio: payload.audio,
+      audioDuration: payload.audioDuration || 0,
+      replyTo: payload.replyTo,
       createdAt: new Date().toISOString(),
       isOptimistic: true,
+      status: "sent",
     };
 
-    // optimistic update
-    set({ messages: [...messages, optimisticMessage] });
+    set({
+      messages: [...messages, optimisticMessage],
+      replyToMessage: null,
+    });
 
     set((state) => ({
       chats: [
@@ -128,10 +185,9 @@ export const useChatStore = create((set, get) => ({
     try {
       const res = await axiosInstance.post(
         `/messages/send/${selectedUser._id}`,
-        messageData
+        payload
       );
 
-      // replace optimistic message
       set({
         messages: get().messages.map((msg) =>
           msg._id === tempId ? res.data : msg
@@ -143,9 +199,48 @@ export const useChatStore = create((set, get) => ({
         ),
       });
     } catch (error) {
-      // rollback
       set({ messages });
       toast.error(error.response?.data?.message || "Send failed");
+    }
+  },
+
+  reactToMessage: async (messageId, emoji) => {
+    const { authUser } = useAuthStore.getState();
+    try {
+      set((state) => ({
+        messages: state.messages.map((msg) => {
+          if (msg._id === messageId) {
+            const filtered = (msg.reactions || []).filter(
+              (r) => r.userId !== authUser._id
+            );
+            const newReactions = emoji
+              ? [...filtered, { userId: authUser._id, emoji }]
+              : filtered;
+            return { ...msg, reactions: newReactions };
+          }
+          return msg;
+        }),
+      }));
+
+      await axiosInstance.post(`/messages/${messageId}/react`, { emoji });
+    } catch (error) {
+      console.error("Failed reaction:", error);
+    }
+  },
+
+  deleteMessage: async (messageId) => {
+    try {
+      set((state) => ({
+        messages: state.messages.map((msg) =>
+          msg._id === messageId
+            ? { ...msg, isDeleted: true, text: "This message was deleted", image: null, audio: null, reactions: [] }
+            : msg
+        ),
+      }));
+
+      await axiosInstance.delete(`/messages/${messageId}`);
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to delete message");
     }
   },
 
@@ -158,18 +253,20 @@ export const useChatStore = create((set, get) => ({
       const { authUser } = useAuthStore.getState();
       const senderId = newMessage.senderId.toString();
       const currentUserId = authUser?._id?.toString();
-      const partnerId = senderId === currentUserId
-        ? newMessage.receiverId.toString()
-        : senderId;
-      const partner = chats.find((chat) => chat._id.toString() === partnerId)
-        || allContacts.find((contact) => contact._id.toString() === partnerId);
+      const partnerId =
+        senderId === currentUserId
+          ? newMessage.receiverId.toString()
+          : senderId;
+      const partner =
+        chats.find((chat) => chat._id.toString() === partnerId) ||
+        allContacts.find((contact) => contact._id.toString() === partnerId);
 
       const isConversationOpen = selectedUser?._id.toString() === partnerId;
       const isIncoming = senderId !== currentUserId;
 
       if (isConversationOpen) {
         set((state) => ({
-          messages: state.messages.some((message) => message._id === newMessage._id)
+          messages: state.messages.some((m) => m._id === newMessage._id)
             ? state.messages
             : [...state.messages, newMessage],
         }));
@@ -182,9 +279,10 @@ export const useChatStore = create((set, get) => ({
             {
               ...partner,
               lastMessage: newMessage,
-              unreadCount: isIncoming && !isConversationOpen
-                ? (partner.unreadCount || 0) + 1
-                : partner.unreadCount || 0,
+              unreadCount:
+                isIncoming && !isConversationOpen
+                  ? (partner.unreadCount || 0) + 1
+                  : partner.unreadCount || 0,
             },
             ...state.chats.filter((chat) => chat._id.toString() !== partnerId),
           ],
@@ -194,9 +292,11 @@ export const useChatStore = create((set, get) => ({
       }
 
       if (isIncoming) {
-        const preview = newMessage.text || (newMessage.image ? "Sent a photo" : "New message");
+        const preview =
+          newMessage.text ||
+          (newMessage.image ? "📷 Photo" : newMessage.audio ? "🎤 Voice message" : "New message");
         toast(`${partner?.fullName || "New message"}: ${preview}`, {
-          duration: 5000,
+          duration: 4000,
         });
       }
 
@@ -206,10 +306,56 @@ export const useChatStore = create((set, get) => ({
         sound.play().catch(() => {});
       }
     });
+
+    socket.on("userTyping", ({ senderId }) => {
+      set((state) => ({
+        typingUsers: { ...state.typingUsers, [senderId]: true },
+      }));
+    });
+
+    socket.on("userStopTyping", ({ senderId }) => {
+      set((state) => ({
+        typingUsers: { ...state.typingUsers, [senderId]: false },
+      }));
+    });
+
+    socket.on("messageReaction", ({ messageId, reactions }) => {
+      set((state) => ({
+        messages: state.messages.map((msg) =>
+          msg._id === messageId ? { ...msg, reactions } : msg
+        ),
+      }));
+    });
+
+    socket.on("messageDeleted", ({ messageId }) => {
+      set((state) => ({
+        messages: state.messages.map((msg) =>
+          msg._id === messageId
+            ? { ...msg, isDeleted: true, text: "This message was deleted", image: null, audio: null, reactions: [] }
+            : msg
+        ),
+      }));
+    });
+
+    socket.on("messagesRead", ({ readBy }) => {
+      set((state) => ({
+        messages: state.messages.map((msg) =>
+          msg.senderId === readBy || msg.receiverId === readBy
+            ? { ...msg, isRead: true, status: "read" }
+            : msg
+        ),
+      }));
+    });
   },
 
   unsubscribeFromMessages: () => {
     const socket = useAuthStore.getState().socket;
-    socket?.off("newMessage");
+    if (!socket) return;
+    socket.off("newMessage");
+    socket.off("userTyping");
+    socket.off("userStopTyping");
+    socket.off("messageReaction");
+    socket.off("messageDeleted");
+    socket.off("messagesRead");
   },
 }));

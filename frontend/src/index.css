@@ -8,28 +8,61 @@
     syntax: '<angle>';
 }
 
+.chatify-chat-bg-dark {
+  background-color: #0b0f19;
+  background-image: radial-gradient(#1e293b 1.5px, transparent 1.5px), radial-gradient(#1e293b 1.5px, #0b0f19 1.5px);
+  background-size: 36px 36px;
+  background-position: 0 0, 18px 18px;
+}
+
+.chatify-chat-bg-light {
+  background-color: #f8fafc;
+  background-image: radial-gradient(#cbd5e1 1.5px, transparent 1.5px), radial-gradient(#cbd5e1 1.5px, #f8fafc 1.5px);
+  background-size: 36px 36px;
+  background-position: 0 0, 18px 18px;
+}
+
+/* Chatify custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}
+
 .input {
-    @apply w-full bg-slate-800/50 border border-slate-700 rounded-lg py-2 pl-10 pr-4 text-slate-200 placeholder-slate-400 focus:ring-2 focus:ring-cyan-500 focus:border-transparent;
-  }
-  
-  .auth-input-icon {
-    @apply absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 size-5;
-  }
-  
-  .auth-input-label {
-    @apply block text-sm font-medium text-slate-300 mb-2;
-  }
-  
-  .auth-badge {
-    @apply inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-cyan-500/20 text-cyan-300;
-  }
-  
-  .auth-btn {
-    @apply w-full bg-cyan-500 text-white rounded-lg py-2.5 font-medium
-    hover:bg-cyan-600 focus:ring-2 focus:ring-cyan-500;
-  }
-  
-  .auth-link {
-    @apply px-4 py-2 inline-block bg-cyan-500/10 rounded-lg text-cyan-400
-    hover:text-cyan-500 text-sm transition-colors;
-  }
+  @apply w-full bg-slate-800/50 border border-slate-700 rounded-lg py-2 pl-10 pr-4 text-slate-200 placeholder-slate-400 focus:ring-2 focus:ring-cyan-500 focus:border-transparent;
+}
+
+.auth-input-icon {
+  @apply absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 size-5;
+}
+
+.auth-input-label {
+  @apply block text-sm font-medium text-slate-300 mb-2;
+}
+
+.auth-badge {
+  @apply inline-flex items-center px-3 py-1 text-xs font-medium rounded-full bg-cyan-500/20 text-cyan-400;
+}
+
+.auth-btn {
+  @apply w-full bg-[#06b6d4] text-slate-950 font-bold rounded-lg py-2.5 
+  hover:bg-[#0891b2] hover:text-white focus:ring-2 focus:ring-cyan-500 transition-colors shadow-md;
+}
+
+.auth-link {
+  @apply px-4 py-2 inline-block bg-cyan-500/10 rounded-lg text-cyan-400
+  hover:text-cyan-300 text-sm transition-colors;
+}
