@@ -31,7 +31,20 @@ function ChatsList() {
                 <img src={chat.profilePic || "/avatar.png"} alt={chat.fullName} />
               </div>
             </div>
-            <h4 className="text-slate-200 font-medium truncate">{chat.fullName}</h4>
+            <div className="min-w-0 flex-1">
+              <h4 className="text-slate-200 font-medium truncate">{chat.fullName}</h4>
+              <p className="text-sm text-slate-400 truncate">
+                {chat.lastMessage?.text || (chat.lastMessage?.image ? "Photo" : "Start a conversation")}
+              </p>
+            </div>
+            {chat.unreadCount > 0 && (
+              <span
+                className="flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-xs font-semibold text-white"
+                title={`${chat.unreadCount} unread ${chat.unreadCount === 1 ? "message" : "messages"}`}
+              >
+                {chat.unreadCount}
+              </span>
+            )}
           </div>
         </div>
       ))}

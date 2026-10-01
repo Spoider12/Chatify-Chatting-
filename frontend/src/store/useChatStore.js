@@ -71,11 +71,29 @@ export const useChatStore = create((set, get) => ({
     set({ isMessagesLoading: true });
     try {
       const res = await axiosInstance.get(`/messages/${userId}`);
-      set({ messages: res.data });
+      set((state) => ({
+        messages: res.data,
+        chats: state.chats.map((chat) =>
+          chat._id === userId ? { ...chat, unreadCount: 0 } : chat
+        ),
+      }));
     } catch (error) {
       toast.error(error.response?.data?.message || "Something went wrong");
     } finally {
       set({ isMessagesLoading: false });
+    }
+  },
+
+  markMessagesRead: async (userId) => {
+    try {
+      await axiosInstance.patch(`/messages/read/${userId}`);
+      set((state) => ({
+        chats: state.chats.map((chat) =>
+          chat._id === userId ? { ...chat, unreadCount: 0 } : chat
+        ),
+      }));
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to mark messages read");
     }
   },
 
@@ -100,6 +118,13 @@ export const useChatStore = create((set, get) => ({
     // optimistic update
     set({ messages: [...messages, optimisticMessage] });
 
+    set((state) => ({
+      chats: [
+        { ...selectedUser, lastMessage: optimisticMessage },
+        ...state.chats.filter((chat) => chat._id !== selectedUser._id),
+      ],
+    }));
+
     try {
       const res = await axiosInstance.post(
         `/messages/send/${selectedUser._id}`,
@@ -111,6 +136,11 @@ export const useChatStore = create((set, get) => ({
         messages: get().messages.map((msg) =>
           msg._id === tempId ? res.data : msg
         ),
+        chats: get().chats.map((chat) =>
+          chat._id === selectedUser._id
+            ? { ...chat, lastMessage: res.data }
+            : chat
+        ),
       });
     } catch (error) {
       // rollback
@@ -120,18 +150,57 @@ export const useChatStore = create((set, get) => ({
   },
 
   subscribeToMessages: () => {
-    const { selectedUser, isSoundEnabled } = get();
-    if (!selectedUser) return;
-
     const socket = useAuthStore.getState().socket;
     if (!socket) return;
 
     socket.on("newMessage", (newMessage) => {
-      if (newMessage.senderId !== selectedUser._id) return;
+      const { selectedUser, isSoundEnabled, allContacts, chats } = get();
+      const { authUser } = useAuthStore.getState();
+      const senderId = newMessage.senderId.toString();
+      const currentUserId = authUser?._id?.toString();
+      const partnerId = senderId === currentUserId
+        ? newMessage.receiverId.toString()
+        : senderId;
+      const partner = chats.find((chat) => chat._id.toString() === partnerId)
+        || allContacts.find((contact) => contact._id.toString() === partnerId);
 
-      set({ messages: [...get().messages, newMessage] });
+      const isConversationOpen = selectedUser?._id.toString() === partnerId;
+      const isIncoming = senderId !== currentUserId;
 
-      if (isSoundEnabled) {
+      if (isConversationOpen) {
+        set((state) => ({
+          messages: state.messages.some((message) => message._id === newMessage._id)
+            ? state.messages
+            : [...state.messages, newMessage],
+        }));
+        if (isIncoming) get().markMessagesRead(partnerId);
+      }
+
+      if (partner) {
+        set((state) => ({
+          chats: [
+            {
+              ...partner,
+              lastMessage: newMessage,
+              unreadCount: isIncoming && !isConversationOpen
+                ? (partner.unreadCount || 0) + 1
+                : partner.unreadCount || 0,
+            },
+            ...state.chats.filter((chat) => chat._id.toString() !== partnerId),
+          ],
+        }));
+      } else {
+        get().getMyChatPartners();
+      }
+
+      if (isIncoming) {
+        const preview = newMessage.text || (newMessage.image ? "Sent a photo" : "New message");
+        toast(`${partner?.fullName || "New message"}: ${preview}`, {
+          duration: 5000,
+        });
+      }
+
+      if (isSoundEnabled && isIncoming) {
         const sound = new Audio("/sounds/notification.mp3");
         sound.currentTime = 0;
         sound.play().catch(() => {});

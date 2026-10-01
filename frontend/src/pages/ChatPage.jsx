@@ -16,12 +16,16 @@ function ChatPage() {
     selectedGroup,
     getMyChatPartners,
     getAllContacts,
+    subscribeToMessages,
+    unsubscribeFromMessages,
   } = useChatStore();
 
   useEffect(() => {
     getMyChatPartners();
     getAllContacts();
-  }, []);
+    subscribeToMessages();
+    return unsubscribeFromMessages;
+  }, [getMyChatPartners, getAllContacts, subscribeToMessages, unsubscribeFromMessages]);
 
   return (
     <div className="relative w-full max-w-6xl h-[800px]">
