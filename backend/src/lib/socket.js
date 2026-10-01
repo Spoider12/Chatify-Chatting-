@@ -105,6 +105,23 @@ io.on("connection",async (socket) => {
     }
   });
 
+  // Typing status handlers
+  socket.on("typing", ({ receiverId, groupId }) => {
+    if (groupId) {
+      socket.to(groupId).emit("userTyping", { senderId: userId, groupId });
+    } else if (receiverId) {
+      io.to(receiverId.toString()).emit("userTyping", { senderId: userId });
+    }
+  });
+
+  socket.on("stopTyping", ({ receiverId, groupId }) => {
+    if (groupId) {
+      socket.to(groupId).emit("userStopTyping", { senderId: userId, groupId });
+    } else if (receiverId) {
+      io.to(receiverId.toString()).emit("userStopTyping", { senderId: userId });
+    }
+  });
+
   // with socket.on we listen for events from clients
   socket.on("disconnect", () => {
     console.log("A user disconnected", socket.user.fullName);

@@ -108,42 +108,33 @@ export const logout = (_, res) => {
   res.status(200).json({ message: "Logged out successfully" });
 };
 export const updateProfile = async (req, res) => {
-  /*try {
-    let imageUrl = req.body.profilePic;
-
-    if (imageUrl) {
-      // Upload to Cloudinary
-      const uploadedResponse = await cloudinary.uploader.upload(imageUrl);
-      imageUrl = uploadedResponse.secure_url;
-
-      // Save to database
-      req.user.profilePic = imageUrl;
-      await req.user.save();
-    }
-
-    res.status(200).json(req.user);
-  } catch (error) {
-    console.log("Error in update profile:", error);
-    res.status(500).json({ message: "Error updating profile" });
-  }*/
   try {
-    const { profilePic } = req.body;
+    const { profilePic, fullName, about } = req.body;
 
-    if (!profilePic) {
-      return res.status(400).json({ message: "Profile picture is required" });
+    if (fullName) {
+      req.user.fullName = fullName.trim();
     }
 
-    // Upload Base64 image to Cloudinary
-    const uploadedResponse = await cloudinary.uploader.upload(profilePic, {
-      folder: "profile_pictures",
-      transformation: [{ width: 300, height: 300, crop: "fill" }],
-    });
+    if (about !== undefined) {
+      req.user.about = about.trim();
+    }
 
-    // Update user
-    req.user.profilePic = uploadedResponse.secure_url;
+    if (profilePic) {
+      if (profilePic.startsWith("data:image") || profilePic.startsWith("http")) {
+        let imageUrl = profilePic;
+        if (profilePic.startsWith("data:image")) {
+          const uploadedResponse = await cloudinary.uploader.upload(profilePic, {
+            folder: "profile_pictures",
+            transformation: [{ width: 300, height: 300, crop: "fill" }],
+          });
+          imageUrl = uploadedResponse.secure_url;
+        }
+        req.user.profilePic = imageUrl;
+      }
+    }
+
     await req.user.save();
 
-    // Remove sensitive fields
     const { password, ...safeUser } = req.user._doc;
 
     res.status(200).json(safeUser);

@@ -20,6 +20,14 @@ const userSchema = new mongoose.Schema({
     type:String,
     default:""
   },
+  about:{
+    type:String,
+    default:"Hey there! I am using Chatify"
+  },
+  lastSeen:{
+    type:Date,
+    default:Date.now
+  }
 },{timestamps: true});
 
 const User = mongoose.model("User",userSchema)

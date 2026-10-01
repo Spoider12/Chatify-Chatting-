@@ -23,7 +23,12 @@ const messageSchema = new mongoose.Schema(
     },
     isRead: {
       type: Boolean,
-      default: true,
+      default: false,
+    },
+    status: {
+      type: String,
+      enum: ["sent", "delivered", "read"],
+      default: "sent",
     },
     text: {
       type: String,
@@ -32,6 +37,33 @@ const messageSchema = new mongoose.Schema(
     },
     image: {
       type: String,
+    },
+    audio: {
+      type: String,
+    },
+    audioDuration: {
+      type: Number,
+      default: 0,
+    },
+    replyTo: {
+      _id: String,
+      text: String,
+      senderName: String,
+      image: String,
+      audio: String,
+    },
+    reactions: [
+      {
+        userId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+        emoji: String,
+      },
+    ],
+    isDeleted: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true }
