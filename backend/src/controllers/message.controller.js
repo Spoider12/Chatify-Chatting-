@@ -26,6 +26,95 @@ export const getAllContacts = async (req, res) => {
 };
 
 /* =========================
+   GET GROUP MESSAGES
+========================= */
+export const getGroupMessages = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const { groupId } = req.params;
+
+    const messages = await Message.find({ groupId })
+      .populate("senderId", "fullName profilePic")
+      .sort({ createdAt: 1 });
+
+    res.status(200).json(messages || []);
+  } catch (error) {
+    console.error("Error in getGroupMessages:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+/* =========================
+   SEND GROUP MESSAGE
+========================= */
+export const sendGroupMessage = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const { text, image, audio, audioDuration, replyTo } = req.body;
+    const { groupId } = req.params;
+    const senderId = req.user._id;
+
+    if (!text && !image && !audio) {
+      return res.status(400).json({ message: "Text, image, or audio is required." });
+    }
+
+    let imageUrl;
+    if (image && image.startsWith("data:image")) {
+      const uploadResponse = await cloudinary.uploader.upload(image);
+      imageUrl = uploadResponse.secure_url;
+    } else if (image) {
+      imageUrl = image;
+    }
+
+    let audioUrl;
+    if (audio && audio.startsWith("data:audio")) {
+      try {
+        const uploadResponse = await cloudinary.uploader.upload(audio, {
+          resource_type: "auto",
+          folder: "voice_notes",
+        });
+        audioUrl = uploadResponse.secure_url;
+      } catch (uploadError) {
+        audioUrl = audio;
+      }
+    } else if (audio) {
+      audioUrl = audio;
+    }
+
+    const newMessage = await Message.create({
+      senderId,
+      groupId,
+      text: text || "",
+      image: imageUrl,
+      audio: audioUrl,
+      audioDuration: audioDuration || 0,
+      replyTo: replyTo || null,
+      messageType: "group",
+      isRead: true,
+      status: "delivered",
+    });
+
+    const populatedMessage = await Message.findById(newMessage._id).populate(
+      "senderId",
+      "fullName profilePic"
+    );
+
+    io.to(groupId.toString()).emit("newMessage", populatedMessage);
+
+    res.status(201).json(populatedMessage);
+  } catch (error) {
+    console.error("Error in sendGroupMessage:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+/* =========================
    GET MESSAGES BY USER ID
 ========================= */
 export const getMessagesByUserId = async (req, res) => {
