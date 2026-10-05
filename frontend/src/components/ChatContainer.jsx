@@ -12,7 +12,9 @@ import MessageReactionMenu from "./MessageReactionMenu";
 function ChatContainer() {
   const {
     selectedUser,
+    selectedGroup,
     getMessagesByUserId,
+    getGroupMessages,
     messages,
     isMessagesLoading,
     reactToMessage,
@@ -31,14 +33,16 @@ function ChatContainer() {
   useEffect(() => {
     if (selectedUser?._id) {
       getMessagesByUserId(selectedUser._id);
+    } else if (selectedGroup?._id) {
+      getGroupMessages(selectedGroup._id);
     }
-  }, [selectedUser, getMessagesByUserId]);
+  }, [selectedUser, selectedGroup, getMessagesByUserId, getGroupMessages]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  if (!selectedUser) return null;
+  if (!selectedUser && !selectedGroup) return null;
 
   const formatMessageTime = (dateStr) => {
     return new Date(dateStr).toLocaleTimeString("en-US", {
@@ -70,7 +74,9 @@ function ChatContainer() {
         ) : messages.length > 0 ? (
           <div className="max-w-4xl mx-auto space-y-3">
             {messages.map((msg) => {
-              const isOwn = msg.senderId === authUser._id;
+              const senderIdStr = typeof msg.senderId === "object" ? msg.senderId?._id : msg.senderId;
+              const senderNameStr = typeof msg.senderId === "object" ? msg.senderId?.fullName : null;
+              const isOwn = senderIdStr === authUser._id;
               const isMenuOpen = activeMenuMessageId === msg._id;
 
               return (

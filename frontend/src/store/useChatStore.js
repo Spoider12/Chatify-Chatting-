@@ -35,12 +35,16 @@ export const useChatStore = create((set, get) => ({
   setActiveDrawer: (drawer) => set({ activeDrawer: drawer }),
 
   // Group selector
-  setSelectedGroup: (group) =>
+  setSelectedGroup: (group) => {
     set({
       selectedGroup: group,
       selectedUser: null,
       replyToMessage: null,
-    }),
+    });
+    if (group?._id) {
+      get().getGroupMessages(group._id);
+    }
+  },
 
   // User selector
   setSelectedUser: (user) =>
@@ -106,6 +110,18 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
+  getGroupMessages: async (groupId) => {
+    set({ isMessagesLoading: true });
+    try {
+      const res = await axiosInstance.get(`/messages/group/${groupId}`);
+      set({ messages: res.data });
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to load group messages");
+    } finally {
+      set({ isMessagesLoading: false });
+    }
+  },
+
   markMessagesRead: async (userId) => {
     try {
       await axiosInstance.patch(`/messages/read/${userId}`);
@@ -136,10 +152,10 @@ export const useChatStore = create((set, get) => ({
   },
 
   sendMessage: async (messageData) => {
-    const { selectedUser, messages, replyToMessage } = get();
+    const { selectedUser, selectedGroup, messages, replyToMessage } = get();
     const { authUser } = useAuthStore.getState();
 
-    if (!selectedUser) return;
+    if (!selectedUser && !selectedGroup) return;
 
     const tempId = `temp-${Date.now()}`;
     const payload = {
@@ -149,7 +165,11 @@ export const useChatStore = create((set, get) => ({
             _id: replyToMessage._id,
             text: replyToMessage.text || (replyToMessage.audio ? "Voice message" : "Photo"),
             senderName:
-              replyToMessage.senderId === authUser._id ? "You" : selectedUser.fullName,
+              replyToMessage.senderId === authUser._id
+                ? "You"
+                : typeof replyToMessage.senderId === "object"
+                ? replyToMessage.senderId.fullName
+                : selectedUser?.fullName || "Member",
             image: replyToMessage.image,
             audio: replyToMessage.audio,
           }
@@ -158,8 +178,13 @@ export const useChatStore = create((set, get) => ({
 
     const optimisticMessage = {
       _id: tempId,
-      senderId: authUser._id,
-      receiverId: selectedUser._id,
+      senderId: {
+        _id: authUser._id,
+        fullName: authUser.fullName,
+        profilePic: authUser.profilePic,
+      },
+      receiverId: selectedUser ? selectedUser._id : null,
+      groupId: selectedGroup ? selectedGroup._id : null,
       text: payload.text || "",
       image: payload.image,
       audio: payload.audio,
@@ -175,29 +200,37 @@ export const useChatStore = create((set, get) => ({
       replyToMessage: null,
     });
 
-    set((state) => ({
-      chats: [
-        { ...selectedUser, lastMessage: optimisticMessage },
-        ...state.chats.filter((chat) => chat._id !== selectedUser._id),
-      ],
-    }));
+    if (selectedUser) {
+      set((state) => ({
+        chats: [
+          { ...selectedUser, lastMessage: optimisticMessage },
+          ...state.chats.filter((chat) => chat._id !== selectedUser._id),
+        ],
+      }));
+    }
 
     try {
-      const res = await axiosInstance.post(
-        `/messages/send/${selectedUser._id}`,
-        payload
-      );
+      const endpoint = selectedGroup
+        ? `/messages/send-group/${selectedGroup._id}`
+        : `/messages/send/${selectedUser._id}`;
+
+      const res = await axiosInstance.post(endpoint, payload);
 
       set({
         messages: get().messages.map((msg) =>
           msg._id === tempId ? res.data : msg
         ),
-        chats: get().chats.map((chat) =>
-          chat._id === selectedUser._id
-            ? { ...chat, lastMessage: res.data }
-            : chat
-        ),
       });
+
+      if (selectedUser) {
+        set({
+          chats: get().chats.map((chat) =>
+            chat._id === selectedUser._id
+              ? { ...chat, lastMessage: res.data }
+              : chat
+          ),
+        });
+      }
     } catch (error) {
       set({ messages });
       toast.error(error.response?.data?.message || "Send failed");
